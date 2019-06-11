@@ -1,0 +1,5 @@
+/venv
+/__pycache__
+/NetNinjaNotes
+/.vscode
+/flaskblog/__pycache__
