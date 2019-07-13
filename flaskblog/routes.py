@@ -3,30 +3,14 @@ import secrets
 from PIL import Image
 from flask import render_template, url_for, flash, redirect, request
 from flaskblog import app, db, bcrypt
-from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm
+from flaskblog.forms import RegistrationForm, LoginForm, UpdateAccountForm, PostForm
 from flaskblog.models import User, Post
 from flask_login import login_user, current_user, logout_user, login_required
-
-
-posts = [
-    {
-        'author': 'Victoria',
-        'title': 'Blog post 1',
-        'content': 'First post content',
-        'date_posted': '01.06.2019'
-    },
-    {
-        'author': 'Victoria',
-        'title': 'Blog post 2',
-        'content': 'Second post content',
-        'date_posted': '02.06.2019'
-    }
-
-]
 
 @app.route("/")
 @app.route("/home")
 def home():
+    posts = Post.query.all()
     return render_template('home.html', posts=posts)
 
 @app.route("/about")
@@ -57,6 +41,7 @@ def login():
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
+            #redirects the user back to the page they were on
             return redirect(next_page) if next_page else redirect(url_for('home'))
         else:
             flash('Login unsuccessful. Please check username and password', 'danger')
@@ -100,3 +85,16 @@ def account():
     image_file = url_for('static', filename = 'profile_pics/' + current_user.image_file)
     return render_template('account.html', title='Account', 
                             image_file=image_file, form=form)
+                        
+@app.route("/post/new", methods=['GET', 'POST'])
+@login_required
+def new_post():
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(title=form.title.data, content=form.content.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        flash('Thank you! Your post has been published!', 'success')
+        return redirect(url_for('home'))
+    return render_template('create_post.html', title='New Post', form=form) 
+
